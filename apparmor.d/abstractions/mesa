@@ -1,0 +1,23 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2017-2018 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# Rules for Mesa implementation of the OpenGL API
+
+  # System files
+  /dev/dri/ r, # libGLX_mesa.so calls drmGetDevice2()
+
+  # User files
+  owner @{HOME}/.cache/ w, # if user clears all caches
+  owner @{HOME}/.cache/mesa_shader_cache/ w,
+  owner @{HOME}/.cache/mesa_shader_cache/index rw,
+  owner @{HOME}/.cache/mesa_shader_cache/??/ w,
+  owner @{HOME}/.cache/mesa_shader_cache/??/* rwk,
+

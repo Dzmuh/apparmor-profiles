@@ -1,0 +1,54 @@
+# kate: syntax AppArmor Security Profile
+# vim: syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2009 Canonical Ltd.
+#    Copyright (C) 2017-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  # system configuration
+  # TODO: Ниже старая рабочая версия блока
+  /{usr,usr/local,var/lib/flatpak/exports}/share/applications/{*/,}               r,
+  /{usr,usr/local,var/lib/flatpak/exports}/share/applications/{*/,}defaults.list  r,
+  /{usr,usr/local,var/lib/flatpak/exports}/share/applications/{*/,}mimeinfo.cache r,
+  /var/lib/snapd/desktop/applications/mimeinfo.cache r,
+  /{usr,usr/local,var/lib/flatpak/exports}/share/applications/{*/,}*.desktop      r,
+  /var/lib/snapd/desktop/applications/{,*.desktop} r,
+  /usr/share/icons/               r,
+  /usr/share/icons/**             r,
+  /usr/share/pixmaps/             r,
+  /usr/share/pixmaps/**           r,
+  /usr/local/share/icons/               r,
+  /usr/local/share/icons/**             r,
+  /usr/local/share/pixmaps/             r,
+  /usr/local/share/pixmaps/**           r,
+  /var/lib/flatpak/exports/share/icons/   r,
+  /var/lib/flatpak/exports/share/icons/** r,
+  # TODO: Mikhail Morfikov предлагает замнить блок выше на вот это, но это вываливает ошибку.
+  # TODO: Уже знаю почему
+  #@{system_share_dirs}/applications/{**,} r,
+  #@{system_share_dirs}/icons/{**,}        r,
+  #@{system_share_dirs}/pixmaps/{**,}      r,
+
+  # TODO: Mikhail Morfikov почему то удалил блок ниже
+  # communitheme snap
+  /snap/communitheme/*/share/icons/   r,
+  /snap/communitheme/*/share/icons/** r,
+
+  # this should probably go elsewhere
+  @{system_share_dirs}/mime/** r,
+
+  # per-user configurations
+  owner @{HOME}/.icons/{**,}                     r,
+  owner @{HOME}/.recently-used.xbel*             rw,
+  owner @{HOME}/.local/share/recently-used.xbel* rw,
+  owner @{HOME}/.config/user-dirs.dirs           r,
+  owner @{HOME}/.config/mimeapps.list            r,
+  owner @{user_share_dirs}/applications/{**,}    r,
+  owner @{user_share_dirs}/icons/{**,}           r,
+  owner @{user_share_dirs}/mime/{**,}            r,

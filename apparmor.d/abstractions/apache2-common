@@ -1,0 +1,45 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2009 Novell/SUSE
+#    Copyright (C) 2009 Canonical Ltd.
+#    Copyright (C) 2017-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# This file contains basic permissions for Apache and every vHost
+
+  #include <abstractions/nameservice>
+
+  # Allow unconfined processes to send us signals by default
+  signal (receive) peer=unconfined,
+  # Allow apache to send us signals by default
+  signal (receive) peer=apache2,
+  # Allow other hats to signal by default
+  signal peer=apache2//*,
+  # Allow us to signal ourselves
+  signal peer=@{profile_name},
+
+  # Apache
+  network inet stream,
+  network inet6 stream,
+  # apache manual, error pages and icons
+  /usr/share/apache2/** r,
+
+  # changehat itself
+  @{PROC}/@{pid}/attr/current                        rw,
+
+  # htaccess files - for what ever it is worth
+  /**/.htaccess            r,
+
+  /dev/urandom            r,
+
+  # sasl-auth
+  /run/saslauthd/mux rw,
+
+  # OCSP stapling
+  /var/log/apache2/stapling-cache rw,

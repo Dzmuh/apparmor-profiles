@@ -1,0 +1,21 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2018 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+# This file contains common DRI-specific rules useful for GUI applications
+# (needed by libdrm and similar).
+
+  /usr/lib{,32,64}/dri/**         mr,
+  /usr/lib/@{multiarch}/dri/**    mr,
+  /usr/lib/fglrx/dri/**           mr,
+  /dev/dri/**                     rw,
+  /etc/drirc                      r,
+  /usr/share/drirc.d/{,*.conf}    r,
+  owner @{HOME}/.drirc            r,

@@ -1,0 +1,39 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2002-2006 Novell/SUSE
+#    Copyright (C) 2009-2011 Canonical Ltd.
+#    Copyright (C) 2017-2018 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  # Allow read to all files user has DAC access to and write access to all
+  # files owned by the user in $HOME.
+  @{HOME}/ r,
+  @{HOME}/** r,
+  owner @{HOME}/** w,
+
+  # Do not allow read and/or write to particularly sensitive/problematic files
+  #include <abstractions/private-files>
+  audit deny @{HOME}/.ssh/{,**} mrwkl,
+  audit deny @{HOME}/.gnome2_private/{,**} mrwkl,
+  audit deny @{HOME}/.kde{,4}/{,share/,share/apps/} w,
+  audit deny @{HOME}/.kde{,4}/share/apps/kwallet/{,**} mrwkl,
+
+  # Comment this out if using gpg plugin/addons
+  audit deny @{HOME}/.gnupg/{,**} mrwkl,
+
+  # Allow read to all files user has DAC access to and write for files the user
+  # owns on removable media and filesystems.
+  /media/** r,
+  /mnt/** r,
+  /srv/** r,
+  /net/** r,
+  owner /media/** w,
+  owner /mnt/** w,
+  owner /srv/** w,
+  owner /net/** w,
