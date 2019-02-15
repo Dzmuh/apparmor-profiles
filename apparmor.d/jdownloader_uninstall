@@ -1,0 +1,71 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2018-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+@{JD_INSTALLDIR} = /home/*/jd2
+
+@{exec_path} = "@{JD_INSTALLDIR}/Uninstall JDownloader"
+profile jdownloader_uninstall @{exec_path} {
+  #include <abstractions/base>
+  #include <abstractions/freedesktop.org>
+  #include <abstractions/fonts>
+  #include <abstractions/fontconfig-cache-read>
+  #include <abstractions/nameservice-strict>
+
+  @{exec_path} r,
+
+  /usr/bin/basename rix,
+  /usr/bin/dirname rix,
+  /usr/bin/expr rix,
+  /bin/ls rix,
+  /bin/grep rix,
+  /bin/egrep rix,
+  /usr/bin/find rix,
+
+  # These are needed when the above tools are in some nonstandard locations
+  #/bin/which rix,
+  #/usr/ r,
+  #/usr/local/ r,
+  #/usr/bin/ r,
+  #/usr/lib/ r,
+
+  deny /opt/ r,
+
+  owner @{JD_INSTALLDIR}/ rw,
+  owner @{JD_INSTALLDIR}/** rw,
+  owner @{JD_INSTALLDIR}/jre/bin/java rix,
+  owner @{JD_INSTALLDIR}/jre/lib/*/jli/libjli.so mrw,
+  owner @{JD_INSTALLDIR}/jre/lib/*/server/libjvm.so mrw,
+  owner @{JD_INSTALLDIR}/jre/lib/*/*.so mrw,
+
+  owner @{HOME}/.oracle_jre_usage/[0-9a-f]*.timestamp rw,
+  owner @{HOME}/.java/.userPrefs/.user.lock.* rwk,
+  owner @{HOME}/.java/.userPrefs/com/install4j/installations/prefs.xml rw,
+  owner @{HOME}/.java/fonts/[0-9]*/fcinfo*.tmp rw,
+  owner @{HOME}/.java/fonts/[0-9]*/fcinfo-*.properties rw,
+
+  owner @{HOME}/.install4j r,
+
+  owner /tmp/hsperfdata_*/ rw,
+  owner /tmp/hsperfdata_*/@{pid} rw,
+  owner /tmp/i4j_log_jd2_[0-9]*.log rw,
+  owner /tmp/install4jError[0-9]*.log rw,
+
+  owner @{HOME}/.Xauthority r,
+
+  deny       @{PROC}/@{pid}/net/ipv6_route r,
+  deny       @{PROC}/@{pid}/net/if_inet6 r,
+  deny owner @{PROC}/@{pid}/cmdline r,
+
+  owner @{HOME}/ r,
+
+}

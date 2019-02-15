@@ -1,0 +1,167 @@
+# kate: syntax AppArmor Security Profile
+# vim: syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2017-2019 Mikhail Morfikov
+#    Copyright (C) 2017 Nibaldo Gonzalez <nibgonz@gmail.com>
+#    Copyright (C) 2019 Ilya Fralkou
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+@{exec_path} = /usr/bin/telegram-desktop
+
+# TODO: Заменить на "#include <abstractions/user-download>"
+# Downloads directory:
+@{DOWNLOADS_DIR} = @{HOME}/Downloads
+
+profile telegram-desktop @{exec_path} {
+  #include <abstractions/base>
+  #include <abstractions/X>
+  #include <abstractions/gtk>
+  #include <abstractions/dbus-strict>
+  #include <abstractions/dbus-session>
+  #include <abstractions/fonts>
+  #include <abstractions/fontconfig-cache-read>
+  #include <abstractions/freedesktop.org>
+  #include <abstractions/audio-strict>
+  #include <abstractions/openssl>
+  #include <abstractions/ssl_certs>
+  #include <abstractions/user-download-strict>
+  #include <abstractions/user-tmp>
+  #include <abstractions/qt5-compose-cache-write>
+  #include <abstractions/dri-enumerate>
+  #include <abstractions/mesa-cache-write>
+  #include <abstractions/nameservice-strict>
+
+  # Telegram files
+  @{exec_path} ixwr,
+  /usr/share/TelegramDesktop/ r,
+  /usr/share/TelegramDesktop/** r,
+
+  # Access to Home
+	owner @{HOME}/ r,
+	owner @{HOME}/* r,
+	owner @{HOME}/[^.]*/ r,
+	owner @{HOME}/[^.]*/** r,
+  owner @{DOWNLOADS_DIR}/** rw, # Write only in the downloads directory
+
+  # Telegram's profile (via telegram -many -workdir ~/some/dir/)
+  owner @{HOME}/.local/share/TelegramDesktop/ rw,
+  owner @{HOME}/.local/share/TelegramDesktop/** rw,
+
+  # TODO: От Mikhail Morfikov. Пока заккоментировал.
+  #deny /dev/tty r,
+  #     /dev/shm/#[0-9]* rw,
+
+  # TODO: От Mikhail Morfikov. Пока заккоментировал.
+  #deny owner @{PROC}/@{pid}/cmdline r,
+  #deny owner @{PROC}/@{pid}/mountinfo r,
+  #deny owner @{PROC}/@{pid}/mounts r,
+
+  deny /etc/fstab r,
+
+  # TODO: От Mikhail Morfikov. Пока заккоментировал.
+  # This ID uniquely identifies the host. It should be considered "confidential", and must not be
+  # exposed in untrusted environments, in particular on the network.
+  #deny /var/lib/dbus/machine-id r,
+  #deny /etc/machine-id r,
+
+  deny @{sys}/devices/system/node/ r,
+  deny @{sys}/devices/system/node/node[0-9]/meminfo r,
+
+  /dev/dri/ r,
+
+  # Dconf
+  #include <abstractions/dconf>
+  /{,var/}run/user/[0-9]*/dconf/ rw,
+  /{,var/}run/user/[0-9]*/dconf/user rw,
+
+  # Needed when saving files as, or otherwise the app crashes
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,
+
+  # Launch external apps
+  /usr/bin/exo-open rPUx,
+  /usr/bin/xdg-open rPUx,
+  /usr/bin/xdg-mime rPUx,
+  /usr/bin/viewnior rPUx,
+  /usr/bin/vlc      rPUx,
+  /usr/bin/smplayer rPUx,
+  /usr/bin/fc-list  rPUx,
+
+  # Далее импорт из https://github.com/nibags/apparmor-profiles/blob/master/extra/home.telegram
+  # Local configuration
+	owner @{HOME}/.config/* r,
+	owner @{HOME}/.config/{fontconfig,gtk-[0-9]*,kde.org,menus,pulse,session}/{**,} r,
+	owner @{HOME}/.config/gtk-[0-9]*/bookmarks rw,
+	owner @{HOME}/.config/gtkrc{,-*} r,
+	owner @{HOME}/.config/dconf/user rw,
+	owner /{,var/}run/user/*/dconf/user rw,
+	owner @{HOME}/.local/share/icons/{,**} rw,
+	owner @{HOME}/.local/share/applications/{,telegramdesktop.desktop} rw,
+	owner @{HOME}/.local/share/applications/telegramdesktop.desktop.[a-zA-Z0-9]* rwk,
+	owner @{HOME}/.local/share/RecentDocuments/ rw,
+	owner @{HOME}/.local/share/RecentDocuments/*.desktop rwl,
+	owner @{HOME}/.local/share/RecentDocuments/*.desktop.[a-zA-Z0-9]* rwk,
+	deny @{HOME}/.local/share/recently-used.xbel r,
+  owner @{HOME}/.cache/fontconfig/{,*} rw,
+
+  # For KDE Plasma 5
+	owner @{HOME}/.kde/share/config/kdeglobals rk,
+	owner @{HOME}/.kde/share/kde4/services/*.protocol rw,
+	owner @{HOME}/.config/kdeglobals rk,
+	owner @{HOME}/.cache/icon-cache.kcache rw,
+	owner @{HOME}/.cache/ksycoca5_* r,
+	owner @{HOME}/.cache/qt_compose_cache_* rw,
+
+  /usr/share/** r,
+	/etc/timezone r,
+	/etc/udev/udev.conf r,
+	/etc/lsb-release r,
+	/etc/xdg/{,**} r,
+	
+	owner @{PROC}/@{pid}/{cmdline,environ,status} r,
+	owner @{PROC}/@{pid}/fd/{,**} r,
+	owner @{PROC}/@{pid}/auxv r,
+	owner @{PROC}/@{pid}/task/{,**} r,
+	/sys/dbus/** r,
+  /sys/devices/**/uevent r,
+
+  /run/systemd/journal/socket rw,
+	/run/dbus/system_bus_socket r,
+	owner /run/user/[0-9]*/bus r,
+	owner /run/user/[0-9]*/*.slave-socket rwkl,
+	
+	/dev/tty r,
+  deny /dev/video* rwmlkx, # Block cameras
+
+  # BUG: Код из блока ниже вызывает ошибку.
+  # Binaries and Helpers
+	#/bin/dash Pixr,
+	#/usr/bin/pulseaudio Pixr,
+	#/usr/bin/{exo,gnome,gvfs,xdg}-open ixr,
+	#/usr/bin/kde-open{,5} ixr,
+	#/usr/bin/kdialog ixr,
+  #/usr/bin/desktop-file-install ixr,
+
+  # Block binary execution and mapping of compiled libraries
+	audit deny owner /**/* m,
+	audit deny @{HOME}/[^.]** mx,
+  audit deny /{media,mnt,srv,net}/** mx,
+
+  audit deny owner /**/*.py* r, # Block Python imports
+
+  deny /run/udev/data/** rwklmx,
+	deny /usr/bin/gconftool-2 x,
+  deny /var/cache/fontconfig/ w,
+
+  ptrace (trace) peer=unconfined,
+  ptrace (trace) peer=Telegram,
+
+  unix (connect, send, receive) type=(stream) peer=(label=unconfined addr=@/dbus-vfs-daemon/socket-*),
+}

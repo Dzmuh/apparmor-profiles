@@ -1,0 +1,167 @@
+# kate: syntax AppArmor Security Profile
+# vim: syntax=apparmor
+
+#include <tunables/global>
+
+/usr/bin/telegram-desktop {
+  #include <abstractions/base>
+  #include <abstractions/fonts>
+  #include <abstractions/audio>
+
+  #include <abstractions/dbus-strict>
+  #include <abstractions/dbus-session-strict>
+  #include <abstractions/dconf>
+
+  #include <abstractions/kde>
+  #include <abstractions/gnome>
+  #include <abstractions/openssl>
+  #include <abstractions/X>
+  #include <abstractions/gtk>
+  #include <abstractions/qt>
+
+  #include <abstractions/nameservice>
+  #include <abstractions/freedesktop.org>
+  #include <abstractions/gstreamer>
+  #include <abstractions/totem>
+  #include <abstractions/ubuntu-browsers.d/plugins-common>
+  #include <abstractions/user-tmp>
+
+  # BUG: Это включение вызывает ошибки
+  ##include <abstractions/ubuntu-browsers.d/ubuntu-integration>
+
+  #include <abstractions/dbus-accessibility-strict>
+  dbus (send)
+       bus=session
+       peer=(name=org.a11y.Bus),
+  dbus (receive)
+       bus=session
+       interface=org.a11y.atspi**,
+  dbus (receive, send)
+       bus=accessibility,
+  
+  # for networking
+  network inet stream,
+  network inet6 stream,
+  @{PROC}/[0-9]*/net/arp r,
+  @{PROC}/[0-9]*/net/if_inet6 r,
+  @{PROC}/[0-9]*/net/ipv6_route r,
+  @{PROC}/[0-9]*/net/dev r,
+  @{PROC}/[0-9]*/net/wireless r,
+  
+  # DBus
+  dbus (send)
+		bus=system
+		interface=org.freedesktop.DBus.Property.EmitsChangedSignal,
+  dbus (send)
+		bus=system
+		interface=org.freedesktop.DBus.Properties,
+  #
+  # NetworkManager
+  dbus (send)
+		bus=system
+		path=/org/freedesktop/NetworkManager
+		member={state,GetDevices},
+	dbus (receive)
+		bus=system
+		path=/org/freedesktop/NetworkManager,
+	dbus (send)
+		bus=system
+		interface=org.freedesktop.NetworkManager.Settings
+		path=/org/freedesktop/NetworkManager/Settings
+		member=ListConnections,
+	dbus (send)
+		bus=system
+		interface=org.freedesktop.NetworkManager.Settings.Connection
+		path=/org/freedesktop/NetworkManager/Settings/[0-9]*
+		member=GetSettings,
+	dbus (receive)
+		bus=system
+		interface=org.freedesktop.NetworkManager.Connection.Active
+		path=/org/freedesktop/NetworkManager/ActiveConnection/[0-9]*
+    member=PropertiesChanged,
+  
+  # should maybe be in abstractions
+  /etc/ r,
+  /etc/timezone r,
+  /etc/mime.types r,
+  /etc/xdg/*buntu/applications/defaults.list    r, # for all derivatives
+  owner @{HOME}/.local/share/applications/defaults.list r,
+  owner @{HOME}/.local/share/applications/mimeapps.list r,
+  owner @{HOME}/.local/share/applications/mimeinfo.cache r,
+
+  # noisy
+  deny /etc/fstab r,
+  deny /.suspended r,
+  deny /boot/initrd.img* r,
+  deny /boot/vmlinuz* r,
+  deny /var/cache/fontconfig/ w,
+  deny @{HOME}/.local/share/recently-used.xbel r,
+  # TODO: investigate
+  deny /usr/bin/gconftool-2 x,
+
+  # Default profile allows downloads to ~/Downloads and uploads from ~/Public
+  owner @{HOME}/ r,
+  owner @{HOME}/Public/ r,
+  owner @{HOME}/Public/* r,
+  owner @{HOME}/Downloads/ r,
+  owner @{HOME}/Downloads/* rw,
+
+  deny @{HOME}/ w,
+
+  owner @{HOME}/.nv/GLCache/ r,
+  owner @{HOME}/.nv/GLCache/** rwk,
+
+  # freedesktop.org ScreenSaver
+  dbus (send)
+       bus=session
+       path=/{,org/freedesktop/,org.gnome/}Screen{s,S}aver
+       interface=org.freedesktop.ScreenSaver
+       member={Inhibit,UnInhibit,SimulateUserActivity}
+       peer=(label=unconfined),
+
+  # gnome, kde and cinnamon screensaver
+  dbus (send)
+       bus=session
+       path=/{,ScreenSaver}
+       interface=org.{gnome.ScreenSaver,kde.screensaver,cinnamon.ScreenSaver}
+       member=SimulateUserActivity
+       peer=(label=unconfined),
+
+  # UPower
+  dbus (send)
+       bus=system
+       path=/org/freedesktop/UPower
+       interface=org.freedesktop.UPower
+       member=EnumerateDevices
+       peer=(label=unconfined),
+  
+  # Site-specific additions and overrides. See local/README for details.
+  #include <local/usr.bin.telegram-desktop>
+
+  #--------------------
+
+  # Configuration, profile, etc.
+  owner @{HOME}/.local/share r,
+  owner @{HOME}/.local/share/TelegramDesktop/ rwk,
+  owner @{HOME}/.local/share/TelegramDesktop/** rwkl,
+
+  @{profile_name} rmix,
+
+  /bin/dash ix,
+  /lib/x86_64-linux-gnu/ld-*.so mr,
+  /run/mount/utab r,
+  /usr/bin/telegram-desktop mr,
+  /usr/bin/xdg-open mrix,
+  /{,usr/}bin/dash mr,
+  owner /home/*/.Xauthority r,
+  owner /home/*/.cache/icon-cache.kcache rw,
+  owner /home/*/.config/dconf/user r,
+  owner /home/*/.config/kdeglobals r,
+  owner /home/*/.local/share/TelegramDesktop/** rw,
+  owner /home/*/.local/share/mime/generic-icons r,
+  owner /home/*/.local/share/mime/mime.cache r,
+  owner /home/*/.local/share/mime/types r,
+  owner /home/*/Downloads/** rw,
+  owner /proc/*/cmdline r,
+  owner /proc/*/mountinfo r,
+}

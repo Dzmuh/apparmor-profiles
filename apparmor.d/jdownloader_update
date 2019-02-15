@@ -1,0 +1,69 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2018-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+@{JD_INSTALLDIR} = /home/*/jd2
+
+@{exec_path} = @{JD_INSTALLDIR}/JDownloader2Update
+profile jdownloader_update @{exec_path} {
+  #include <abstractions/base>
+  #include <abstractions/freedesktop.org>
+  #include <abstractions/fonts>
+  #include <abstractions/fontconfig-cache-read>
+  #include <abstractions/nameservice-strict>
+
+  @{exec_path} r,
+
+  /usr/bin/basename rix,
+  /usr/bin/dirname rix,
+  /usr/bin/expr rix,
+  /bin/sed rix,
+  /bin/chmod rix,
+
+  owner @{JD_INSTALLDIR}/ r,
+  owner @{JD_INSTALLDIR}/** rw,
+  owner @{JD_INSTALLDIR}/jre/bin/java rix,
+  owner @{JD_INSTALLDIR}/jre/lib/*/jli/libjli.so mrw,
+  owner @{JD_INSTALLDIR}/jre/lib/*/server/libjvm.so mrw,
+  owner @{JD_INSTALLDIR}/jre/lib/*/*.so mrw,
+  owner @{JD_INSTALLDIR}/logs/[0-9]*_*/*.log.*.lck rwk,
+  owner @{JD_INSTALLDIR}/JD2.lock rwk,
+  owner @{JD_INSTALLDIR}/tmp/jna/jna[0-9]*.tmp mrw,
+  owner @{JD_INSTALLDIR}/tmp/7zip/SevenZipJBinding-*/lib7-Zip-JBinding.so mrw,
+
+  owner @{HOME}/.oracle_jre_usage/[0-9a-f]*.timestamp rw,
+  owner @{HOME}/.java/.userPrefs/.user.lock.* rwk,
+  owner @{HOME}/.java/fonts/[0-9]*/fcinfo*.tmp rw,
+  owner @{HOME}/.java/fonts/[0-9]*/fcinfo-*.properties rw,
+
+  owner @{HOME}/.install4j rw,
+
+  owner /tmp/hsperfdata_*/ rw,
+  owner /tmp/hsperfdata_*/@{pid} rw,
+  # If the @{JD_INSTALLDIR}/tmp/ dir can't be accessed, the /tmp/ dir will be used instead
+  owner /tmp/SevenZipJBinding-*/ rw,
+  owner /tmp/SevenZipJBinding-*/lib7-Zip-JBinding.so mrw,
+  # For auto updates
+  owner /tmp/lastChanceSrc[0-9]*lch rw,
+  owner /tmp/lastChanceDst[0-9]*.jar rw,
+
+  owner @{HOME}/.Xauthority r,
+
+  # What's this for?
+  deny owner @{HOME}/.mozilla/firefox/ r,
+  deny owner @{HOME}/.mozilla/firefox/*.default/prefs.js r,
+
+  deny       @{PROC}/@{pid}/net/ipv6_route r,
+  deny       @{PROC}/@{pid}/net/if_inet6 r,
+  deny owner @{PROC}/@{pid}/cmdline r,
+
+}
