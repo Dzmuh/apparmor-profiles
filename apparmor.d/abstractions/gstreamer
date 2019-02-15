@@ -10,7 +10,7 @@
   /etc/udev/udev.conf r,
   /etc/wildmidi/wildmidi.cfg r,
 
-  /dev/ r,
+  /dev/dri/ r,
   /dev/bus/usb/ r,
   /dev/dri/ r,
 
@@ -36,7 +36,8 @@
 
   /usr/lib/frei0r-[0-9]/*.so m,
   # /usr/lib/@{multiarch}/dri/** mr,
-  /usr/lib/@{multiarch}/gstreamer[0-9]*.[0-9]*/gstreamer-[0-9]*.[0-9]*/gst-plugin-scanner mrix,
+  # TODO: Строки ниже импортированны из проекта Mikhail Morfikov и некоторые из них, те что закомментированы, у меня вызывают ошибку. Почему?
+#  /usr/lib/@{multiarch}/gstreamer[0-9]*.[0-9]*/gstreamer-[0-9]*.[0-9]*/gst-plugin-scanner mrix,
   /usr/lib/@{multiarch}/libproxy/*/modules/*.so mr,
   /usr/lib/@{multiarch}/libvisual-[0-9].[0-9]/*/*.so m,
 
