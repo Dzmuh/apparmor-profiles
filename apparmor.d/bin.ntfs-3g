@@ -1,0 +1,62 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2018-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+@{exec_path} = /bin/ntfs-3g
+profile ntfs-3g @{exec_path} {
+  #include <abstractions/base>
+
+  # Needed in order to mount ntfs disks
+  capability setgid,
+  capability setuid,
+  capability sys_admin,
+
+  @{exec_path} mr,
+
+  owner @{PROC}/@{pid}/mounts r,
+        @{PROC}/@{pids}/mountinfo r,
+        @{PROC}/swaps r,
+
+  @{sys}/devices/virtual/block/**/name r,
+
+  /dev/fuse rw,
+
+  /dev/sd?? rwk,
+  /dev/loop[0-9]* rwk,
+  /dev/loop[0-9]p[0-9]* rwk,
+
+  # Allow to mount ntfs disks only under the /media/$user/ and /mnt/ dirs
+  mount fstype=fuseblk /dev/sd?? -> /media/*/*/,
+  mount fstype=fuseblk /dev/sd?? -> /mnt/,
+
+  # kmod is used to load the fuse kernel module
+  /bin/kmod rCx -> kmod,
+  profile kmod {
+    #include <abstractions/base>
+
+    # To be able to load the fuse module
+    capability sys_module,
+
+    /bin/kmod mr,
+
+    /etc/modprobe.d/ r,
+    /etc/modprobe.d/*.conf r,
+
+    owner @{PROC}/cmdline r,
+
+    # file_inherit
+    deny @{PROC}/@{pids}/mountinfo r,
+    deny @{PROC}/swaps r,
+
+  }
+
+}

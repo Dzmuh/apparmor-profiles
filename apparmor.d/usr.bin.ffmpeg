@@ -1,0 +1,102 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2017-2019 Mikhail Morfikov
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+#include <tunables/global>
+
+# a52, aac, ac3
+@{ffmpeg_ext}  = [aA]{52,[aA][cC],[cC]3}
+# mka
+@{ffmpeg_ext} += [mM][kK][aA]
+# flac
+@{ffmpeg_ext} += [fF][lL][aA][cC]
+# mp1, mp2, mp3, mpc
+@{ffmpeg_ext} += [mM][pP][123cC]
+# oga, oma
+@{ffmpeg_ext} += [oO][gGmM][aA]
+# wav, wv
+@{ffmpeg_ext} += [wW]{,[aA]}[vV]
+# wm, wma
+@{ffmpeg_ext} += [wW][mM]{,[aA]}
+# 3g2, 3gp, 3gp2, 3gpp
+@{ffmpeg_ext} +=  3[gG]{[2pP],[pP][2pP]}
+# asf
+@{ffmpeg_ext} += [aA][sS][fF]
+# avi
+@{ffmpeg_ext} += [aA][vV][iI]
+# divx
+@{ffmpeg_ext} += [dD][iI][vV][xX]
+# m1v, m2v, m4v
+@{ffmpeg_ext} += [mM][124][vV]
+# mkv, mov
+@{ffmpeg_ext} += [mM][kKoO][vV]
+# mp4, mpa, mpe, mpg
+@{ffmpeg_ext} += [mM][pP][4aAeEgG]
+# mpeg, mpeg1, mpeg2, mpeg4
+@{ffmpeg_ext} += [mM][pP][eE][gG]{,[124]}
+# ogg, ogm, ogx, ogv
+@{ffmpeg_ext} += [oO][gG][gGmMxXvV]
+# rm, rmvb
+@{ffmpeg_ext} += [rR][mM]{,[vV][bB]}
+# webm
+@{ffmpeg_ext} += [wW][eE][bB][mM]
+# wmv, wtv
+@{ffmpeg_ext} += [wW][mMtT][vV]
+# mp2t
+@{ffmpeg_ext} += [mM][pP]2[tT]
+# m4a
+@{ffmpeg_ext} += [mM]4[aA]
+# bmp
+@{ffmpeg_ext} += [bB][mM][pP]
+# jpg, jpeg
+@{ffmpeg_ext} += [jJ][pP]{,[eE]}[gG]
+# png
+@{ffmpeg_ext} += [pP][nN][gG]
+# gif
+@{ffmpeg_ext} += [gG][iI][fF]
+# srt
+@{ffmpeg_ext} += [sS][rR][tT]
+# txt
+@{ffmpeg_ext} += [tT][xX][tT]
+# sub
+@{ffmpeg_ext} += [sS][uU][bB]
+# ts
+@{ffmpeg_ext} += [tT][sS]
+# part
+@{ffmpeg_ext} += [pP][aA][rR][tT]
+
+@{exec_path} = /usr/bin/ffmpeg
+profile ffmpeg @{exec_path} {
+  #include <abstractions/base>
+  #include <abstractions/ssl_certs>
+  #include <abstractions/nameservice-strict>
+
+  @{exec_path}  mr,
+
+  # Which files ffmpeg should be able to open
+        / r,
+        /home/ r,
+  owner @{HOME}/ r,
+  owner @{HOME}/**/ r,
+        /media/ r,
+  owner /media/**/ r,
+  owner /{home,media}/**.@{ffmpeg_ext}{,.[0-9]*} rw,
+  owner /media/Grafi/* rw,
+
+  @{sys}/devices/system/node/ r,
+  @{sys}/devices/system/node/node[0-9]/meminfo r,
+
+  # To generate thumbnails in some apps
+  owner /tmp/*.jpg rw,
+
+  # TMP files for apps using ffmpeg
+  owner /tmp/vidcutter/** rw,
+
+}

@@ -3,6 +3,7 @@
 #
 #    Copyright (C) 2002-2005 Novell/SUSE
 #    Copyright (C) 2017 Christian Boltz
+#    Copyright (C) 2018-2019 Mikhail Morfikov
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -15,18 +16,25 @@
 
 #include <tunables/global>
 
-profile netstat /{usr/,}bin/netstat {
+@{exec_path} = /{,usr/}bin/netstat
+profile netstat @{exec_path} flags=(complain) {
   #include <abstractions/base>
   #include <abstractions/consoles>
   #include <abstractions/nameservice>
 
   capability dac_override,
   capability dac_read_search,
+
+  # Optional
+  deny capability syslog,
+
+  # For the "-p" option
   capability sys_ptrace,
+  ptrace (trace,read),
 
-  ptrace (read),
+  @{PROC}/@{pid}/attr/current r,
 
-  /{usr/,}bin/netstat rmix,
+  @{exec_path} rmix,
   /etc/networks r,
   @{PROC} r,
   @{PROC}/@{pids}/cmdline r,
@@ -42,6 +50,9 @@ profile netstat /{usr/,}bin/netstat {
   @{PROC}/@{pid}/net/udp r,
   @{PROC}/@{pid}/net/udp6 r,
   @{PROC}/@{pid}/net/udplite r,
-  @{PROC}/@{pid}/net/udplit6 r,
+  @{PROC}/@{pid}/net/udplite6 r,
   @{PROC}/@{pid}/net/unix r,
+  # For  "netstat -i"
+  @{PROC}/@{pid}/net/dev r,
+
 }
